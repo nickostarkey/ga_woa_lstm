@@ -5,7 +5,7 @@ Contains all hyperparam bounds and algo params
 # Stock data config
 STOCK_CONFIG = {
     'ticker': '^GSPC',
-    'period': '5y',
+    'period': '2y',
     'lookback': 60, # days
     'train_split': 0.7,
     'val_split': 0.15,

@@ -118,7 +118,7 @@ class StockDataLoader:
         
         # Fit scaler only on training data
         self.scaler.fit(train_data)
-        self.n_features = self.scaler.n_features_in_
+        self.n_features = train_data.shape[1]
         
         # Transform all data
         train_scaled = self.scaler.transform(train_data)
@@ -158,10 +158,9 @@ class StockDataLoader:
         """Convert normalized predictions back to original scale"""
         
         # Create dummy array with same shape as orig features
-        if self.n_features is None:
-            raise RuntimeError("Scaler not fitted")
         n_features = self.n_features
-        
+        if n_features is None:
+            raise ValueError("n_features not set. Call prepare_data() first.")
         dummy = np.zeros((len(predictions), n_features))
         dummy[:, 0] = predictions
         

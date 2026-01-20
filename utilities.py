@@ -121,34 +121,78 @@ def plot_residuals(y_true, y_pred, save_path):
     logger.info(f"Residuals plot saved to {save_path}")
 
 
-def plot_hyperparameter_evolution(history: dict, save_path: str):
+
+def plot_hyperparam_evolution(history: dict, save_path: str):
     """Plot evolution of best hyperparams over iterations"""
-    # When tracking hyperparams at each iteration
-    # Let's test creating a summary plot first
+
+    if 'hyperparam_history' not in history or len(history['hyperparam_history']) == 0:
+        # Just show final optimal hyperparams
+        fig, ax = plt.subplots(figsize=(10, 6))
+        
+        best_params = history['best_params']
+        param_names = list(best_params.keys())
+        param_values = list(best_params.values())
+        
+        # Create bar plot
+        colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728']
+        bars = ax.barh(param_names, param_values, color=colors)
+        
+        # Add value labels
+        for i, (bar, val) in enumerate(zip(bars, param_values)):
+            ax.text(val, i, f' {val:.4f}', va='center', fontsize=10)
+        
+        ax.set_xlabel('Param Value', fontsize=12)
+        ax.set_title('Optimal Hyperparams', fontsize=14, fontweight='bold')
+        ax.grid(True, alpha=0.3, axis='x')
+        
+        plt.tight_layout()
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        plt.close()
+        logger.info(f"Hyperparam plot saved to {save_path}")
+        return
     
-    fig, ax = plt.subplots(figsize=(10, 6))
+    # Extract hyperparam evolution over iterations
+    hyperparam_history = history['hyperparam_history']
+    param_names = list(hyperparam_history[0].keys())
+    iterations = range(1, len(hyperparam_history) + 1)
     
-    best_params = history['best_params']
-    param_names = list(best_params.keys())
-    param_values = list(best_params.values())
+    # Create subplots for each hyperparam
+    fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+    axes = axes.flatten()
     
-    # Create bar plot
     colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728']
-    bars = ax.barh(param_names, param_values, color=colors)
     
-    # Add value labels
-    for i, (bar, val) in enumerate(zip(bars, param_values)):
-        ax.text(val, i, f' {val:.4f}', va='center', fontsize=10)
+    for i, param_name in enumerate(param_names):
+        ax = axes[i]
+        
+        # Extract values for this param over iterations
+        param_values = [h[param_name] for h in hyperparam_history]
+        
+        # Plot evolution
+        ax.plot(iterations, param_values, marker='o', linewidth=2, 
+                markersize=6, color=colors[i], label=param_name)
+        
+        # Mark final value
+        final_value = param_values[-1]
+        ax.axhline(y=final_value, color=colors[i], linestyle='--', 
+                   alpha=0.5, linewidth=1.5)
+        ax.text(len(iterations), final_value, f' {final_value:.4f}', 
+                va='center', fontsize=9, fontweight='bold')
+        
+        # Formatting
+        ax.set_xlabel('GA Iteration', fontsize=11)
+        ax.set_ylabel(param_name.replace('_', ' ').title(), fontsize=11)
+        ax.set_title(f'{param_name.replace("_", " ").title()} Evolution', 
+                     fontsize=12, fontweight='bold')
+        ax.grid(True, alpha=0.3)
+        ax.legend(fontsize=9)
     
-    ax.set_xlabel('Parameter Value', fontsize=12)
-    ax.set_title('Optimal Hyperparams', fontsize=14, fontweight='bold')
-    ax.grid(True, alpha=0.3, axis='x')
-    
+    plt.suptitle('Hyperparam Evolution Over GA-WOA Iterations', 
+                 fontsize=14, fontweight='bold', y=1.00)
     plt.tight_layout()
     plt.savefig(save_path, dpi=300, bbox_inches='tight')
     plt.close()
-    logger.info(f"Hyperparams plot saved to {save_path}")
-
+    logger.info(f"Hyperparam evolution plot saved to {save_path}")
 
 def save_results(history, metrics, save_path):
     """Save optimization results to csv"""
@@ -182,5 +226,11 @@ def save_results(history, metrics, save_path):
             'WOA_Best': history['woa_history']
         })
         hist_df.to_excel(writer, sheet_name='Convergence', index=False)
+        
+        # Save hyperparam evolution if exists
+        if 'hyperparam_history' in history and len(history['hyperparam_history']) > 0:
+            hyperparam_df = pd.DataFrame(history['hyperparam_history'])
+            hyperparam_df.insert(0, 'Iteration', pd.Series(range(1, len(hyperparam_df) + 1)))
+            hyperparam_df.to_excel(writer, sheet_name='Hyperparam_Evolution', index=False)
     
     logger.info(f"Results saved to {save_path.replace('.csv', '.xlsx')}")
