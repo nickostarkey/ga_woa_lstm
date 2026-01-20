@@ -38,5 +38,7 @@ def main():
         use_technical_indicators=True
     )
 
+    print(f"X_train\n{X_train}\n")
+
 if __name__ == "__main__":
     main()
