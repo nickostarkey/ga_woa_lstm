@@ -29,6 +29,7 @@ class StockDataLoader:
         self.test_split = test_split
         self.scaler = MinMaxScaler(feature_range=(0, 1))
         self.data = None
+        self.n_features: int | None = None
         
     def download_data(self) -> pd.DataFrame:
         """Download stock data from Yahoo Finance"""
@@ -117,6 +118,7 @@ class StockDataLoader:
         
         # Fit scaler only on training data
         self.scaler.fit(train_data)
+        self.n_features = self.scaler.n_features_in_
         
         # Transform all data
         train_scaled = self.scaler.transform(train_data)
@@ -156,7 +158,10 @@ class StockDataLoader:
         """Convert normalized predictions back to original scale"""
         
         # Create dummy array with same shape as orig features
-        n_features = self.scaler.n_features_in_
+        if self.n_features is None:
+            raise RuntimeError("Scaler not fitted")
+        n_features = self.n_features
+        
         dummy = np.zeros((len(predictions), n_features))
         dummy[:, 0] = predictions
         
